@@ -12,13 +12,14 @@ from config.settings import Settings
 
 app = FastAPI(
     title="Chat Analysis API",
-    description="API for analyzing WhatsApp chat exports"
+    description="API para analizar los chat exportados"
 )
 
 settings = Settings()
 chat_analyzer = ChatAnalyzer()
 chat_summarizer = ChatSummarizer(settings.openai_api_key)
 
+#Aqui empieza el endpoint para analizar
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_chat(
     file: UploadFile = File(...),
@@ -29,21 +30,21 @@ async def analyze_chat(
         if method not in ["lda", "kmeans"]:
             raise ValueError(f"Invalid method: {method}. Must be 'lda' or 'kmeans'")
         
-        # Save uploaded file temporarily
+        # Guardar de manera temporal
         content = await file.read()
         temp_file_path = f"temp_{file.filename}"
         with open(temp_file_path, "wb") as f:
             f.write(content)
 
-        # Process chat and get ZIP file path
+        # Procesar CHAT y extraer para exportar
         zip_file_path = chat_analyzer.analyze(temp_file_path, method)
         
         # Generate summaries if requested
         if generate_summary:
-            # Aquí podrías implementar la generación de resúmenes dentro del ZIP
+            # Aquí falta la chicha del resumen con la IA
             pass
         
-        # Return the ZIP file
+        # Retornar el archivo ZIP
         return FileResponse(
             path=zip_file_path,
             filename=os.path.basename(zip_file_path),
@@ -63,9 +64,10 @@ async def analyze_chat(
         )
 
     finally:
-        # Cleanup temporary files
+        # Eliminar el archivo temporal
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
 if __name__ == "__main__":
+    # Aqui se puede manejar el puerto y en host
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

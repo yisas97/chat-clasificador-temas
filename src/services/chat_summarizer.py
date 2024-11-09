@@ -45,7 +45,7 @@ class ChatSummarizer:
                 summary = self.generate_summary(messages, keywords)
                 summaries[topic_num] = summary
                 
-                time.sleep(1)  # Rate limiting
+                time.sleep(1)  # Poner tiempo para leer
                 
         self._save_summaries(results_dir, summaries)
         return summaries
@@ -72,7 +72,7 @@ class ChatSummarizer:
         summaries_dir = os.path.join(results_dir, "resumenes_gpt")
         os.makedirs(summaries_dir, exist_ok=True)
         
-        # Save individual summaries
+        # Guardar el resumen individual
         for topic_num, summary in summaries.items():
             file_path = os.path.join(summaries_dir, f"resumen_gpt_tema_{topic_num}.txt")
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -80,7 +80,7 @@ class ChatSummarizer:
                 f.write("="*50 + "\n\n")
                 f.write(summary)
         
-        # Save general summary
+        # Guardar el general resumen
         general_summary_path = os.path.join(summaries_dir, "resumen_general_gpt.txt")
         with open(general_summary_path, 'w', encoding='utf-8') as f:
             f.write("RESUMEN GENERAL DE TODOS LOS TEMAS\n")

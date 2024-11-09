@@ -117,14 +117,14 @@ class ChatAnalyzer:
         try:
             os.makedirs(temp_dir, exist_ok=True)
 
-            # Save cluster files
+            # Los archivos cluster de los mensajes
             for cluster in df["cluster"].unique():
                 df_cluster = df[df["cluster"] == cluster]
                 self._save_cluster_file(
                     df_cluster, cluster, keywords[cluster], temp_dir
                 )
 
-            # Save summary file
+            # Se guardara el archivo resumen
             self._save_summary_file(df, keywords, temp_dir)
 
         except Exception as e:
@@ -258,18 +258,18 @@ class ChatAnalyzer:
                 f.write(f"TEMA {cluster_num+1}\n")
                 f.write("=" * 50 + "\n\n")
 
-                # Write keywords
+                # Escribir las palabras claves
                 f.write("PALABRAS CLAVE DEL TEMA:\n")
                 f.write(", ".join(keywords) + "\n\n")
 
-                # Write statistics
+                # Escribir estadisticas
                 f.write(f"Total mensajes: {len(df_cluster)}\n")
                 f.write(f"Participantes: {df_cluster['usuario'].nunique()}\n")
                 f.write(
                     f"Período: {df_cluster['fecha'].min()} a {df_cluster['fecha'].max()}\n\n"
                 )
 
-                # Write messages
+                # Escribir mensajes
                 f.write("MENSAJES DEL TEMA:\n")
                 f.write("-" * 50 + "\n\n")
 
