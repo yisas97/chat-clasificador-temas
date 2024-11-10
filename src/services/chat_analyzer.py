@@ -97,35 +97,55 @@ class ChatAnalyzer:
     def cluster_messages(self, df, method="lda", n_groups=5):
         try:
             if len(df) < n_groups:
-                raise ValueError(
-                    f"No hay suficientes mensajes para crear {n_groups} grupos"
-                )
+                # Ajustar el número de grupos si hay pocos mensajes
+                adjusted_groups = min(len(df), 3)
+                print(f"Ajustando número de grupos de {n_groups} a {adjusted_groups} debido a la cantidad de mensajes")
+                n_groups = adjusted_groups
 
             vectorizer = TfidfVectorizer(
-                min_df=2,
-                max_df=0.90,
+                min_df=1,  # Para pocos mensajes
+                max_df=0.95,
                 ngram_range=(1, 2),
-                stop_words=self._get_stop_words(),
+                stop_words=self._get_stop_words()
             )
-
-            X = vectorizer.fit_transform(df["mensaje_limpio"])
-
-            if method == "kmeans":
-                model = KMeans(n_clusters=n_groups, random_state=42, n_init=10)
-                clusters = model.fit_predict(X)
-                keywords = self._get_kmeans_keywords(model, vectorizer)
+            
+            X = vectorizer.fit_transform(df['mensaje_limpio'])
+            
+            if method == 'kmeans':
+                if n_groups == 1:
+                    # Si solo hay un grupo, asignar todo al mismo cluster
+                    clusters = np.zeros(len(df))
+                    keywords = {0: self._get_top_keywords(vectorizer, X, n=20)}
+                else:
+                    model = KMeans(n_clusters=n_groups, random_state=42, n_init=10)
+                    clusters = model.fit_predict(X)
+                    keywords = self._get_kmeans_keywords(model, vectorizer)
             else:  # lda
-                model = LatentDirichletAllocation(
-                    n_components=n_groups, random_state=42
-                )
-                topic_distribution = model.fit_transform(X)
-                clusters = topic_distribution.argmax(axis=1)
-                keywords = self._get_lda_keywords(model, vectorizer)
-
-            df["cluster"] = clusters
+                if n_groups == 1:
+                    # Si solo hay un grupo, asignar todo al mismo topic
+                    clusters = np.zeros(len(df))
+                    keywords = {0: self._get_top_keywords(vectorizer, X, n=20)}
+                else:
+                    model = LatentDirichletAllocation(
+                        n_components=n_groups, 
+                        random_state=42,
+                        max_iter=10  # Reducido para conjuntos pequeños
+                    )
+                    topic_distribution = model.fit_transform(X)
+                    clusters = topic_distribution.argmax(axis=1)
+                    keywords = self._get_lda_keywords(model, vectorizer)
+                
+            df['cluster'] = clusters
             return df, keywords
+
         except Exception as e:
+            print(f"Error en clustering: {str(e)}")
             raise Exception(f"Error en el clustering de mensajes: {str(e)}")
+    
+    def _get_top_keywords(self, vectorizer, X, n=20):
+        feature_names = vectorizer.get_feature_names_out()
+        sums = X.sum(axis=0).A1
+        return [feature_names[i] for i in sums.argsort()[-n:][::-1]]
 
     def save_results(self, df, keywords, temp_dir):
         try:
