@@ -48,36 +48,50 @@ class ChatAnalyzer:
     def load_chat(self, file_path):
         try:
             messages = []
-
-            with open(file_path, "r", encoding="utf-8") as file:
+        
+            with open(file_path, 'r', encoding='utf-8') as file:
                 for line in file:
                     line = line.strip()
                     if not line:
                         continue
-
-                    pattern = r"(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2}\s(?:a\.\sm\.|p\.\sm\.))\s-\s([^:]+?)(?::\s(.+)|$)"
+                
+                    # Patrón actualizado para coincidir con el formato:
+                    # "DD/MM/YY, HH:mm - Usuario: Mensaje"
+                    pattern = r'(\d{2}/\d{2}/\d{2}),\s(\d{2}:\d{2})\s-\s(\d+):\s(.+)'
                     match = re.match(pattern, line)
 
                     if match:
                         date, time, user, message = match.groups()
+                        
                         if message:
+                            # Limpieza del mensaje
                             clean_message = self.clean_message(message)
+                            
                             if clean_message:
-                                messages.append(
-                                    {
-                                        "fecha": date,
-                                        "hora": time,
-                                        "usuario": user.strip(),
-                                        "mensaje_original": message,
-                                        "mensaje_limpio": clean_message,
-                                    }
-                                )
+                                messages.append({
+                                    'fecha': date,
+                                    'hora': time,
+                                    'usuario': user.strip(),
+                                    'mensaje_original': message,
+                                    'mensaje_limpio': clean_message
+                                })
 
             if not messages:
+                print("Contenido del archivo:")
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    print(file.read())
                 raise ValueError("No se encontraron mensajes válidos en el archivo")
 
             return pd.DataFrame(messages)
+        
         except Exception as e:
+            print(f"Error al procesar el archivo: {str(e)}")
+            print("Primeras líneas del archivo:")
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    print(file.read()[:500])
+            except:
+                print("No se pudo leer el archivo")
             raise Exception(f"Error al cargar el chat: {str(e)}")
 
     def cluster_messages(self, df, method="lda", n_groups=5):
