@@ -20,51 +20,48 @@ chat_analyzer = ChatAnalyzer()
 chat_summarizer = ChatSummarizer(settings.openai_api_key)
 
 #Aqui empieza el endpoint para analizar
-@app.post("/analyze", response_model=AnalysisResponse)
+@app.post("/analyze")
 async def analyze_chat(
     file: UploadFile = File(...),
     method: Optional[str] = "lda",
-    generate_summary: Optional[bool] = False
+    format: Optional[str] = "json"
 ):
     try:
-        if method not in ["lda", "kmeans"]:
-            raise ValueError(f"Invalid method: {method}. Must be 'lda' or 'kmeans'")
-        
-        # Guardar de manera temporal
         content = await file.read()
         temp_file_path = f"temp_{file.filename}"
+        
         with open(temp_file_path, "wb") as f:
             f.write(content)
 
-        # Procesar CHAT y extraer para exportar
-        zip_file_path = chat_analyzer.analyze(temp_file_path, method)
+        # Analizar el chat
+        df = chat_analyzer.load_chat(temp_file_path)
+        df_processed, keywords = chat_analyzer.cluster_messages(df, method)
         
-        # Generate summaries if requested
-        if generate_summary:
-            # Aquí falta la chicha del resumen con la IA
-            pass
-        
-        # Retornar el archivo ZIP
-        return FileResponse(
-            path=zip_file_path,
-            filename=os.path.basename(zip_file_path),
-            media_type='application/zip'
-        )
+        # Preparar respuesta JSON
+        topics = {}
+        for cluster in df_processed["cluster"].unique():
+            df_cluster = df_processed[df_processed["cluster"] == cluster]
+            topics[int(cluster)] = {
+                "keywords": keywords[cluster][:10],
+                "message_count": len(df_cluster),
+                "messages": df_cluster[["fecha", "hora", "usuario", "mensaje_original"]]
+                    .to_dict("records")
+            }
+
+        return JSONResponse({
+            "status": "success",
+            "topics": topics
+        })
 
     except Exception as e:
-        error_msg = f"Error: {str(e)}\nTraceback: {traceback.format_exc()}"
-        print(error_msg)  # Para logging
         raise HTTPException(
             status_code=500,
             detail={
                 "status": "error",
-                "message": str(e),
-                "traceback": traceback.format_exc()
+                "message": str(e)
             }
         )
-
     finally:
-        # Eliminar el archivo temporal
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 

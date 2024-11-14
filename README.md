@@ -5,6 +5,10 @@ python -m venv env-clasificador-new
 .\env-clasificador-new\Scripts\activate
 # 4. Actualiza pip
 python -m pip install --upgrade pip
+
+# Instalar las dependencia
+pip install -r requirements.txt
+
 # 5. Levanta con python
 python .\src\main.py
 
