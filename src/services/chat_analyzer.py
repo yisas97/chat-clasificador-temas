@@ -25,11 +25,11 @@ class ChatAnalyzer:
 
         text_clean = text.lower()
         patterns = [
-            r"[\U0001F300-\U0001F9FF]",
-            r"\b(?:xd+|:v|v:|umu|uwu|:\'v|:\'\'v)\b",
-            r"http[s]?://\S+",
-            r"stk-\d+-wa\d+\.webp",
-            r"img-\d+-wa\d+\.jpg",
+            r"[\U0001F300-\U0001F9FF]",  # Emojis
+            r"\b(?:xd+|:v|v:|umu|uwu|:\'v|:\'\'v)\b",  # Emotes básicos
+            r"http[s]?://\S+",  # URLs
+            r"stk-\d+-wa\d+\.webp",  # Stickers
+            r"img-\d+-wa\d+\.jpg",  # Imágenes
             r"<se editó este mensaje\.>",
             r"<multimedia omitido>",
             r"\bx\d+\b",
@@ -38,6 +38,13 @@ class ChatAnalyzer:
             r"se eliminó este mensaje\.",
             r"\b(enlace|unir|unió|unido)\b",
             r"(añadió|añadiste)\b",
+            r"\b(?:tmr|ctmr|ptm|ptmr|mrd|mrda|csm|ctm)\b",
+            r"\b(?:xd+|XD+|xD+|Xd+)\b",
+            r"\b(?:wtf|wdf|wtff|wdff)\b",
+            r"\b(?:ps|pe|pe\'|pex|pz|pue|pueh)\b",
+            r"\b(?:pls|plz|porfa)\b",
+            r"\b(?:ok|okk|okey|oki|okis)\b",
+            r"(?:\.{2,}|\?{2,}|\!{2,})",
         ]
 
         for pattern in patterns:
@@ -211,56 +218,22 @@ class ChatAnalyzer:
             raise Exception(f"Error en el análisis: {str(e)}")
 
     def _get_stop_words(self):
-        return [
-            "de",
-            "la",
-            "que",
-            "el",
-            "en",
-            "y",
-            "a",
-            "los",
-            "se",
-            "del",
-            "las",
-            "un",
-            "por",
-            "con",
-            "una",
-            "su",
-            "para",
-            "es",
-            "al",
-            "lo",
-            "como",
-            "mas",
-            "pero",
-            "sus",
-            "le",
-            "ya",
-            "o",
-            "este",
-            "si",
-            "porque",
-            "muy",
-            "sin",
-            "sobre",
-            "mi",
-            "hay",
-            "bien",
-            "cuando",
-            "ahora",
-            "esta",
-            "asi",
-            "nos",
-            "ni",
-            "ese",
-            "eso",
-            "esto",
-            "etc",
-            "otro",
-            "tras",
+        basic_stop_words = [
+            "de", "la", "que", "el", "en", "y", "a", "los", "se", "del", "las",
+            "un", "por", "con", "una", "su", "para", "es", "al", "lo", "como",
+            "mas", "pero", "sus", "le", "ya", "o", "este", "si", "porque", "muy",
+            "sin", "sobre", "mi", "hay", "bien", "cuando", "ahora", "esta", "asi",
+            "nos", "ni", "ese", "eso", "esto", "etc", "otro", "tras"
         ]
+        
+        informal_stop_words = [
+            "aea", "ya", "asi", "osea", "sea", "pues", "bueno", "igual", "tipo",
+            "nomas", "nomás", "asu", "asuu", "ah", "eh", "oh", "mmm", "umm",
+            "este", "esta", "esto", "ps", "pe", "nel", "simon", "simón", "ora",
+            "tons", "entonces", "aja", "ajá", "dale", "va", "nel", "pos", "pss"
+        ]
+        
+        return basic_stop_words + informal_stop_words
 
     def _get_kmeans_keywords(self, model, vectorizer):
         try:
