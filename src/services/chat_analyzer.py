@@ -63,9 +63,10 @@ class ChatAnalyzer:
             r"\b(?:ok|okk|okey|oki|okis)\b",
             r"(?:\.{2,}|\?{2,}|\!{2,})",
             
-             r'[^\w\s]',
-            r'\d+',
-            r'\s+',
+            
+            #  r'[^\w\s]',
+            # r'\d+',
+            # r'\s+',
         ]
 
         for pattern in patterns:
