@@ -7,6 +7,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.decomposition import LatentDirichletAllocation
 from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 import nltk
 import zipfile
 import tempfile
@@ -18,6 +20,21 @@ class ChatAnalyzer:
         # Initialize NLTK resources
         nltk.download("wordnet", quiet=True)
         nltk.download("omw-1.4", quiet=True)
+        nltk.download('punkt', quiet=True)
+        nltk.download('stopwords', quiet=True)
+        self.lemmatizer = WordNetLemmatizer()
+        
+    def preprocess_text(self, text):
+        if pd.isna(text):
+            return ""
+            
+        text_clean = self.clean_message(text)
+        
+        tokens = word_tokenize(text_clean)
+        
+        lemmatized = [self.lemmatizer.lemmatize(token) for token in tokens]
+        
+        return ' '.join(lemmatized)
 
     def clean_message(self, text):
         if pd.isna(text):
@@ -45,6 +62,10 @@ class ChatAnalyzer:
             r"\b(?:pls|plz|porfa)\b",
             r"\b(?:ok|okk|okey|oki|okis)\b",
             r"(?:\.{2,}|\?{2,}|\!{2,})",
+            
+             r'[^\w\s]',
+            r'\d+',
+            r'\s+',
         ]
 
         for pattern in patterns:
@@ -71,22 +92,19 @@ class ChatAnalyzer:
                         date, time, user, message = match.groups()
                         
                         if message:
-                            # Limpieza del mensaje
-                            clean_message = self.clean_message(message)
+                            # Procesa del mensaje
+                            preprocessed_message = self.preprocess_text(message)
                             
-                            if clean_message:
+                            if preprocessed_message:
                                 messages.append({
                                     'fecha': date,
                                     'hora': time,
                                     'usuario': user.strip(),
                                     'mensaje_original': message,
-                                    'mensaje_limpio': clean_message
+                                    'mensaje_limpio': preprocessed_message
                                 })
 
             if not messages:
-                print("Contenido del archivo:")
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    print(file.read())
                 raise ValueError("No se encontraron mensajes válidos en el archivo")
 
             return pd.DataFrame(messages)
@@ -218,6 +236,9 @@ class ChatAnalyzer:
             raise Exception(f"Error en el análisis: {str(e)}")
 
     def _get_stop_words(self):
+        
+        stop_words_base = set(stopwords.words('spanish'))
+        
         basic_stop_words = [
             "de", "la", "que", "el", "en", "y", "a", "los", "se", "del", "las",
             "un", "por", "con", "una", "su", "para", "es", "al", "lo", "como",
@@ -226,14 +247,14 @@ class ChatAnalyzer:
             "nos", "ni", "ese", "eso", "esto", "etc", "otro", "tras"
         ]
         
-        informal_stop_words = [
+        chat_stop_words  = [
             "aea", "ya", "asi", "osea", "sea", "pues", "bueno", "igual", "tipo",
             "nomas", "nomás", "asu", "asuu", "ah", "eh", "oh", "mmm", "umm",
             "este", "esta", "esto", "ps", "pe", "nel", "simon", "simón", "ora",
             "tons", "entonces", "aja", "ajá", "dale", "va", "nel", "pos", "pss"
         ]
         
-        return basic_stop_words + informal_stop_words
+        return list(stop_words_base.union(basic_stop_words, chat_stop_words))
 
     def _get_kmeans_keywords(self, model, vectorizer):
         try:
